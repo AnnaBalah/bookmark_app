@@ -200,25 +200,38 @@
       color: var(--muted);
       font-size: 0.75rem;
       flex-shrink: 0;
+      white-space: nowrap;
     }
 
-    button.delete {
+    .bookmark-actions {
+      display: flex;
+      gap: 0.3rem;
+      flex-shrink: 0;
+    }
+
+    button.delete,
+    button.edit {
       background: transparent;
       border: 1px solid transparent;
       border-radius: 6px;
       color: var(--muted);
       cursor: pointer;
-      font-size: 1rem;
+      font-size: 0.95rem;
       line-height: 1;
       padding: 0.3rem 0.5rem;
       transition: color 0.2s, border-color 0.2s, background 0.2s;
-      flex-shrink: 0;
     }
 
     button.delete:hover {
       background: rgba(224, 90, 90, 0.12);
       border-color: var(--danger);
       color: var(--danger);
+    }
+
+    button.edit:hover {
+      background: rgba(245, 197, 24, 0.12);
+      border-color: var(--accent);
+      color: var(--accent);
     }
 
     .empty {
@@ -332,6 +345,129 @@
     }
 
     .btn-confirm:hover { background: var(--danger-h); }
+
+    select {
+      appearance: none;
+      -webkit-appearance: none;
+      background: var(--bg) url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='8' viewBox='0 0 12 8'%3E%3Cpath d='M1 1l5 5 5-5' stroke='%237a9bbf' stroke-width='1.8' fill='none' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E") no-repeat right 0.9rem center;
+      border: 1px solid var(--surface2);
+      border-radius: var(--radius);
+      color: var(--text);
+      font-size: 0.95rem;
+      padding: 0.65rem 2.5rem 0.65rem 0.9rem;
+      transition: border-color 0.2s;
+      width: 100%;
+      outline: none;
+      cursor: pointer;
+    }
+
+    select:focus { border-color: var(--accent); }
+
+    select option { background: var(--surface); color: var(--text); }
+
+    .category-tabs {
+      max-width: 640px;
+      margin: 0 auto 1rem;
+      display: flex;
+      gap: 0.5rem;
+      flex-wrap: wrap;
+    }
+
+    .cat-tab {
+      background: var(--surface);
+      border: 1px solid var(--surface2);
+      border-radius: 99px;
+      color: var(--muted);
+      cursor: pointer;
+      font-size: 0.8rem;
+      font-weight: 600;
+      padding: 0.3rem 0.85rem;
+      transition: background 0.2s, color 0.2s, border-color 0.2s;
+    }
+
+    .cat-tab:hover { border-color: var(--accent); color: var(--text); }
+
+    .cat-tab.active {
+      background: var(--accent);
+      border-color: var(--accent);
+      color: #0d1b2a;
+    }
+
+    .cat-group-header {
+      max-width: 640px;
+      margin: 1.25rem auto 0.5rem;
+      display: flex;
+      align-items: center;
+      gap: 0.6rem;
+      font-size: 0.78rem;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.1em;
+    }
+
+    .cat-group-header .cat-dot {
+      width: 10px;
+      height: 10px;
+      border-radius: 50%;
+      flex-shrink: 0;
+    }
+
+    .cat-group-header .cat-line {
+      flex: 1;
+      height: 1px;
+      background: var(--surface2);
+    }
+
+    .cat-badge {
+      font-size: 0.7rem;
+      font-weight: 700;
+      padding: 0.15rem 0.55rem;
+      border-radius: 99px;
+      flex-shrink: 0;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+      opacity: 0.85;
+      cursor: pointer;
+      user-select: none;
+    }
+
+    .cat-badge:hover { opacity: 1; filter: brightness(1.15); }
+
+    .cat-picker {
+      position: fixed;
+      background: var(--surface);
+      border: 1px solid var(--surface2);
+      border-radius: var(--radius);
+      box-shadow: 0 8px 28px rgba(0,0,0,0.45);
+      z-index: 600;
+      overflow: hidden;
+      min-width: 170px;
+      display: none;
+    }
+
+    .cat-picker.open { display: block; animation: slide-in 0.15s ease; }
+
+    .cat-picker-item {
+      align-items: center;
+      cursor: pointer;
+      display: flex;
+      gap: 0.6rem;
+      font-size: 0.85rem;
+      font-weight: 600;
+      padding: 0.55rem 0.9rem;
+      transition: background 0.15s;
+    }
+
+    .cat-picker-item:hover { background: var(--surface2); }
+
+    .cat-picker-item.current { color: var(--accent); }
+
+    .cat-picker-dot {
+      width: 8px;
+      height: 8px;
+      border-radius: 50%;
+      flex-shrink: 0;
+    }
   </style>
 </head>
 <body>
@@ -346,6 +482,13 @@
     <form id="form">
       <input type="url"  id="url"   placeholder="https://example.com" required />
       <input type="text" id="title" placeholder="Title (optional — auto-filled from URL)" />
+      <select id="category">
+        <option value="uncategorized">Uncategorized</option>
+        <option value="entertainment">Entertainment</option>
+        <option value="work">Work</option>
+        <option value="shopping">Shopping</option>
+        <option value="medicine">Medicine</option>
+      </select>
       <button type="submit" class="primary">Add Bookmark</button>
     </form>
   </div>
@@ -354,10 +497,42 @@
     <input type="text" id="filter" placeholder="Search bookmarks..." />
   </div>
 
+  <div class="category-tabs" id="cat-tabs">
+    <button class="cat-tab active" data-cat="all">All</button>
+    <button class="cat-tab" data-cat="entertainment">Entertainment</button>
+    <button class="cat-tab" data-cat="work">Work</button>
+    <button class="cat-tab" data-cat="shopping">Shopping</button>
+    <button class="cat-tab" data-cat="medicine">Medicine</button>
+    <button class="cat-tab" data-cat="uncategorized">Uncategorized</button>
+  </div>
+
   <p id="count"></p>
   <div id="list"></div>
 
   <div class="toast" id="toast"></div>
+
+  <div class="cat-picker" id="cat-picker" role="listbox" aria-label="Choose category"></div>
+
+  <div class="modal-backdrop" id="edit-backdrop">
+    <div class="modal" role="dialog" aria-modal="true" aria-labelledby="edit-modal-title" style="max-width:420px;text-align:left">
+      <h3 id="edit-modal-title" style="margin-bottom:1rem;color:var(--accent)">Edit Bookmark</h3>
+      <form id="edit-form" style="display:flex;flex-direction:column;gap:0.75rem">
+        <input type="url"  id="edit-url"      placeholder="https://example.com" required />
+        <input type="text" id="edit-title"    placeholder="Title" required />
+        <select id="edit-category">
+          <option value="uncategorized">Uncategorized</option>
+          <option value="entertainment">Entertainment</option>
+          <option value="work">Work</option>
+          <option value="shopping">Shopping</option>
+          <option value="medicine">Medicine</option>
+        </select>
+        <div class="modal-actions" style="margin-top:0.5rem">
+          <button type="button" class="btn-cancel" id="edit-cancel">Cancel</button>
+          <button type="submit" class="primary" style="padding:0.55rem 1.2rem;font-size:0.9rem">Save</button>
+        </div>
+      </form>
+    </div>
+  </div>
 
   <div class="modal-backdrop" id="modal-backdrop">
     <div class="modal" role="dialog" aria-modal="true" aria-labelledby="modal-title">
@@ -373,6 +548,17 @@
 
   <script>
     const STORAGE_KEY = 'bm_v1';
+
+    const CATEGORIES = ['entertainment', 'work', 'shopping', 'medicine', 'uncategorized'];
+
+    const CAT_META = {
+      entertainment: { label: 'Entertainment', color: '#9b59b6' },
+      work:          { label: 'Work',          color: '#3b82f6' },
+      shopping:      { label: 'Shopping',      color: '#22c55e' },
+      medicine:      { label: 'Medicine',      color: '#ef4444' },
+      uncategorized: { label: 'Uncategorized', color: '#7a9bbf' },
+    };
+
 
     function load() {
       try { return JSON.parse(localStorage.getItem(STORAGE_KEY)) || []; }
@@ -410,17 +596,41 @@
     }
 
     let filterText = '';
+    let activeCategory = 'all';
+
+    function bookmarkCard(b) {
+      const cat = b.category || 'uncategorized';
+      const meta = CAT_META[cat] || CAT_META.uncategorized;
+      return `
+        <div class="bookmark" data-id="${b.id}">
+          <img class="favicon" src="${faviconUrl(b.url)}" alt="" onerror="this.style.display='none'" />
+          <div class="bookmark-info">
+            <div class="bookmark-title">${escHtml(b.title)}</div>
+            <div class="bookmark-url"><a href="${escAttr(b.url)}" target="_blank" rel="noopener">${escHtml(b.url)}</a></div>
+          </div>
+          <span class="cat-badge" data-badge-id="${b.id}" title="Change category" style="background:${meta.color}22;color:${meta.color}">${escHtml(meta.label)}</span>
+          <span class="bookmark-meta">${formatDate(b.added)}</span>
+          <div class="bookmark-actions">
+            <button class="edit" title="Edit" data-edit-id="${b.id}">&#x270F;</button>
+            <button class="delete" title="Delete" data-id="${b.id}">&#x2715;</button>
+          </div>
+        </div>`;
+    }
 
     function render() {
       const bookmarks = load();
       const list = document.getElementById('list');
       const count = document.getElementById('count');
 
-      const filtered = filterText
+      let filtered = filterText
         ? bookmarks.filter(b =>
             b.title.toLowerCase().includes(filterText) ||
             b.url.toLowerCase().includes(filterText))
         : bookmarks;
+
+      if (activeCategory !== 'all') {
+        filtered = filtered.filter(b => (b.category || 'uncategorized') === activeCategory);
+      }
 
       count.textContent = filtered.length
         ? `${filtered.length} bookmark${filtered.length !== 1 ? 's' : ''}`
@@ -429,22 +639,37 @@
       if (!filtered.length) {
         list.innerHTML = `<div class="empty">
           <span>&#x1F50D;</span>
-          ${bookmarks.length ? 'No results for your search.' : 'No bookmarks yet — add one above!'}
+          ${bookmarks.length ? 'No results.' : 'No bookmarks yet — add one above!'}
         </div>`;
         return;
       }
 
-      list.innerHTML = filtered.slice().reverse().map(b => `
-        <div class="bookmark" data-id="${b.id}">
-          <img class="favicon" src="${faviconUrl(b.url)}" alt="" onerror="this.style.display='none'" />
-          <div class="bookmark-info">
-            <div class="bookmark-title">${escHtml(b.title)}</div>
-            <div class="bookmark-url"><a href="${escAttr(b.url)}" target="_blank" rel="noopener">${escHtml(b.url)}</a></div>
-          </div>
-          <span class="bookmark-meta">${formatDate(b.added)}</span>
-          <button class="delete" title="Delete" data-id="${b.id}">&#x2715;</button>
-        </div>
-      `).join('');
+      if (activeCategory !== 'all') {
+        list.innerHTML = filtered.slice().reverse().map(bookmarkCard).join('');
+        return;
+      }
+
+      // Grouped by category
+      const grouped = {};
+      filtered.forEach(b => {
+        const cat = b.category || 'uncategorized';
+        (grouped[cat] = grouped[cat] || []).push(b);
+      });
+
+      let html = '';
+      CATEGORIES.forEach(cat => {
+        if (!grouped[cat] || !grouped[cat].length) return;
+        const meta = CAT_META[cat];
+        html += `
+          <div class="cat-group-header" style="color:${meta.color}">
+            <span class="cat-dot" style="background:${meta.color}"></span>
+            ${escHtml(meta.label)}
+            <span class="cat-line"></span>
+          </div>`;
+        html += grouped[cat].slice().reverse().map(bookmarkCard).join('');
+      });
+
+      list.innerHTML = html;
     }
 
     function escHtml(s) {
@@ -472,6 +697,7 @@
       if (!/^https?:\/\//i.test(url)) url = 'https://' + url;
 
       const title = titleInput.value.trim() || guessTitle(url);
+      const category = document.getElementById('category').value;
 
       const bookmarks = load();
       if (bookmarks.some(b => b.url === url)) {
@@ -479,12 +705,13 @@
         return;
       }
 
-      bookmarks.push({ id: Date.now().toString(), url, title, added: new Date().toISOString() });
+      bookmarks.push({ id: Date.now().toString(), url, title, category, added: new Date().toISOString() });
       save(bookmarks);
       render();
       toast('Bookmark added');
       urlInput.value   = '';
       titleInput.value = '';
+      document.getElementById('category').value = 'uncategorized';
       urlInput.focus();
     });
 
@@ -521,10 +748,122 @@
     });
 
     document.addEventListener('keydown', e => {
-      if (e.key === 'Escape' && backdrop.classList.contains('open')) closeModal();
+      if (e.key !== 'Escape') return;
+      if (editBackdrop.classList.contains('open')) { closeEditModal(); return; }
+      if (backdrop.classList.contains('open'))     { closeModal();     return; }
+      if (picker.classList.contains('open'))       { closePicker();    return; }
+    });
+
+    // Category picker
+    const picker = document.getElementById('cat-picker');
+    let pickerTargetId = null;
+
+    function openPicker(id, badge) {
+      pickerTargetId = id;
+      const current = (load().find(b => b.id === id) || {}).category || 'uncategorized';
+
+      picker.innerHTML = CATEGORIES.map(cat => {
+        const meta = CAT_META[cat];
+        return `<div class="cat-picker-item${cat === current ? ' current' : ''}" data-cat="${cat}" role="option">
+          <span class="cat-picker-dot" style="background:${meta.color}"></span>
+          ${escHtml(meta.label)}
+        </div>`;
+      }).join('');
+
+      const rect = badge.getBoundingClientRect();
+      const pickerW = 170;
+      const pickerH = CATEGORIES.length * 37; // approx row height
+      let left = rect.left;
+      if (left + pickerW > window.innerWidth - 8) left = window.innerWidth - pickerW - 8;
+      const spaceBelow = window.innerHeight - rect.bottom;
+      const top = spaceBelow >= pickerH + 10
+        ? rect.bottom + 6
+        : rect.top - pickerH - 6;
+      picker.style.left = left + 'px';
+      picker.style.top  = Math.max(8, top) + 'px';
+      picker.classList.add('open');
+    }
+
+    function closePicker() {
+      picker.classList.remove('open');
+      pickerTargetId = null;
+    }
+
+    picker.addEventListener('click', e => {
+      const item = e.target.closest('.cat-picker-item');
+      if (!item || !pickerTargetId) return;
+      const newCat = item.dataset.cat;
+      const bookmarks = load();
+      const bm = bookmarks.find(b => b.id === pickerTargetId);
+      if (bm) {
+        bm.category = newCat;
+        save(bookmarks);
+        render();
+        toast(`Moved to ${CAT_META[newCat].label}`);
+      }
+      closePicker();
+    });
+
+    document.addEventListener('click', e => {
+      if (!picker.classList.contains('open')) return;
+      if (!picker.contains(e.target) && !e.target.closest('[data-badge-id]')) closePicker();
+    });
+
+    // Edit modal
+    const editBackdrop = document.getElementById('edit-backdrop');
+    let editingId = null;
+
+    function openEditModal(id) {
+      const bm = load().find(b => b.id === id);
+      if (!bm) return;
+      editingId = id;
+      document.getElementById('edit-url').value      = bm.url;
+      document.getElementById('edit-title').value    = bm.title;
+      document.getElementById('edit-category').value = bm.category || 'uncategorized';
+      editBackdrop.classList.add('open');
+      document.getElementById('edit-title').focus();
+    }
+
+    function closeEditModal() {
+      editBackdrop.classList.remove('open');
+      editingId = null;
+    }
+
+    document.getElementById('edit-cancel').addEventListener('click', closeEditModal);
+
+    editBackdrop.addEventListener('click', e => {
+      if (e.target === editBackdrop) closeEditModal();
+    });
+
+    document.getElementById('edit-form').addEventListener('submit', e => {
+      e.preventDefault();
+      if (!editingId) return;
+      let url = document.getElementById('edit-url').value.trim();
+      if (!/^https?:\/\//i.test(url)) url = 'https://' + url;
+      const title    = document.getElementById('edit-title').value.trim() || guessTitle(url);
+      const category = document.getElementById('edit-category').value;
+      const bookmarks = load();
+      const bm = bookmarks.find(b => b.id === editingId);
+      if (bm) { bm.url = url; bm.title = title; bm.category = category; }
+      save(bookmarks);
+      closeEditModal();
+      render();
+      toast('Bookmark updated');
     });
 
     document.getElementById('list').addEventListener('click', e => {
+      const badge = e.target.closest('[data-badge-id]');
+      if (badge) {
+        e.stopPropagation();
+        if (picker.classList.contains('open') && pickerTargetId === badge.dataset.badgeId) {
+          closePicker();
+        } else {
+          openPicker(badge.dataset.badgeId, badge);
+        }
+        return;
+      }
+      const editBtn = e.target.closest('button.edit');
+      if (editBtn) { openEditModal(editBtn.dataset.editId); return; }
       const btn = e.target.closest('button.delete');
       if (!btn) return;
       const id = btn.dataset.id;
@@ -534,6 +873,14 @@
 
     document.getElementById('filter').addEventListener('input', e => {
       filterText = e.target.value.trim().toLowerCase();
+      render();
+    });
+
+    document.getElementById('cat-tabs').addEventListener('click', e => {
+      const btn = e.target.closest('.cat-tab');
+      if (!btn) return;
+      activeCategory = btn.dataset.cat;
+      document.querySelectorAll('.cat-tab').forEach(t => t.classList.toggle('active', t === btn));
       render();
     });
 
