@@ -1,0 +1,543 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Bookmark Manager</title>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --bg:        #0d1b2a;
+      --surface:   #1b2d45;
+      --surface2:  #243a57;
+      --accent:    #f5c518;
+      --accent-h:  #e0b000;
+      --text:      #e8eef4;
+      --muted:     #7a9bbf;
+      --danger:    #e05a5a;
+      --danger-h:  #c04040;
+      --radius:    10px;
+    }
+
+    body {
+      background: var(--bg);
+      color: var(--text);
+      font-family: 'Segoe UI', system-ui, sans-serif;
+      min-height: 100vh;
+      padding: 2rem 1rem;
+    }
+
+    header {
+      text-align: center;
+      margin-bottom: 2.5rem;
+    }
+
+    header h1 {
+      font-size: 2rem;
+      font-weight: 700;
+      color: var(--accent);
+      letter-spacing: 0.03em;
+    }
+
+    header p {
+      color: var(--muted);
+      margin-top: 0.35rem;
+      font-size: 0.95rem;
+    }
+
+    .card {
+      background: var(--surface);
+      border: 1px solid var(--surface2);
+      border-radius: var(--radius);
+      padding: 1.5rem;
+      max-width: 640px;
+      margin: 0 auto 2rem;
+    }
+
+    .card h2 {
+      font-size: 1rem;
+      font-weight: 600;
+      color: var(--accent);
+      margin-bottom: 1rem;
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+    }
+
+    form {
+      display: flex;
+      flex-direction: column;
+      gap: 0.75rem;
+    }
+
+    input[type="text"],
+    input[type="url"] {
+      background: var(--bg);
+      border: 1px solid var(--surface2);
+      border-radius: var(--radius);
+      color: var(--text);
+      font-size: 0.95rem;
+      padding: 0.65rem 0.9rem;
+      transition: border-color 0.2s;
+      width: 100%;
+      outline: none;
+    }
+
+    input[type="text"]:focus,
+    input[type="url"]:focus {
+      border-color: var(--accent);
+    }
+
+    input::placeholder { color: var(--muted); }
+
+    button.primary {
+      background: var(--accent);
+      border: none;
+      border-radius: var(--radius);
+      color: #0d1b2a;
+      cursor: pointer;
+      font-size: 0.95rem;
+      font-weight: 700;
+      padding: 0.7rem;
+      transition: background 0.2s, transform 0.1s;
+    }
+
+    button.primary:hover  { background: var(--accent-h); }
+    button.primary:active { transform: scale(0.98); }
+
+    #search {
+      max-width: 640px;
+      margin: 0 auto 1rem;
+    }
+
+    #search input {
+      width: 100%;
+      background: var(--surface);
+      border: 1px solid var(--surface2);
+      border-radius: var(--radius);
+      color: var(--text);
+      font-size: 0.95rem;
+      padding: 0.65rem 0.9rem;
+      outline: none;
+      transition: border-color 0.2s;
+    }
+
+    #search input:focus { border-color: var(--accent); }
+
+    #count {
+      max-width: 640px;
+      margin: 0 auto 0.75rem;
+      color: var(--muted);
+      font-size: 0.85rem;
+    }
+
+    #list {
+      max-width: 640px;
+      margin: 0 auto;
+      display: flex;
+      flex-direction: column;
+      gap: 0.65rem;
+    }
+
+    .bookmark {
+      background: var(--surface);
+      border: 1px solid var(--surface2);
+      border-radius: var(--radius);
+      display: flex;
+      align-items: center;
+      gap: 0.9rem;
+      padding: 0.9rem 1rem;
+      transition: border-color 0.2s;
+      animation: slide-in 0.2s ease;
+    }
+
+    .bookmark:hover { border-color: var(--accent); }
+
+    @keyframes slide-in {
+      from { opacity: 0; transform: translateY(-6px); }
+      to   { opacity: 1; transform: translateY(0); }
+    }
+
+    .favicon {
+      width: 20px;
+      height: 20px;
+      border-radius: 4px;
+      flex-shrink: 0;
+      object-fit: contain;
+    }
+
+    .bookmark-info {
+      flex: 1;
+      min-width: 0;
+    }
+
+    .bookmark-title {
+      color: var(--text);
+      font-weight: 600;
+      font-size: 0.95rem;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+
+    .bookmark-url {
+      color: var(--muted);
+      font-size: 0.8rem;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      margin-top: 0.15rem;
+    }
+
+    .bookmark-url a {
+      color: inherit;
+      text-decoration: none;
+    }
+
+    .bookmark-url a:hover { color: var(--accent); }
+
+    .bookmark-meta {
+      color: var(--muted);
+      font-size: 0.75rem;
+      flex-shrink: 0;
+    }
+
+    button.delete {
+      background: transparent;
+      border: 1px solid transparent;
+      border-radius: 6px;
+      color: var(--muted);
+      cursor: pointer;
+      font-size: 1rem;
+      line-height: 1;
+      padding: 0.3rem 0.5rem;
+      transition: color 0.2s, border-color 0.2s, background 0.2s;
+      flex-shrink: 0;
+    }
+
+    button.delete:hover {
+      background: rgba(224, 90, 90, 0.12);
+      border-color: var(--danger);
+      color: var(--danger);
+    }
+
+    .empty {
+      text-align: center;
+      color: var(--muted);
+      padding: 2.5rem 1rem;
+      font-size: 0.95rem;
+    }
+
+    .empty span { display: block; font-size: 2rem; margin-bottom: 0.5rem; }
+
+    .toast {
+      position: fixed;
+      bottom: 1.5rem;
+      left: 50%;
+      transform: translateX(-50%) translateY(60px);
+      background: var(--accent);
+      color: #0d1b2a;
+      font-weight: 700;
+      font-size: 0.9rem;
+      padding: 0.6rem 1.2rem;
+      border-radius: 99px;
+      opacity: 0;
+      transition: opacity 0.25s, transform 0.25s;
+      pointer-events: none;
+      z-index: 999;
+    }
+
+    .toast.show {
+      opacity: 1;
+      transform: translateX(-50%) translateY(0);
+    }
+
+    /* Confirm modal */
+    .modal-backdrop {
+      position: fixed;
+      inset: 0;
+      background: rgba(0, 0, 0, 0.6);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      z-index: 1000;
+      opacity: 0;
+      transition: opacity 0.2s;
+      pointer-events: none;
+    }
+
+    .modal-backdrop.open {
+      opacity: 1;
+      pointer-events: all;
+    }
+
+    .modal {
+      background: var(--surface);
+      border: 1px solid var(--surface2);
+      border-radius: var(--radius);
+      padding: 1.75rem 2rem;
+      max-width: 360px;
+      width: 90%;
+      text-align: center;
+      transform: scale(0.92);
+      transition: transform 0.2s;
+    }
+
+    .modal-backdrop.open .modal { transform: scale(1); }
+
+    .modal-icon { font-size: 2rem; margin-bottom: 0.6rem; }
+
+    .modal h3 {
+      color: var(--text);
+      font-size: 1.05rem;
+      margin-bottom: 0.4rem;
+    }
+
+    .modal p {
+      color: var(--muted);
+      font-size: 0.88rem;
+      margin-bottom: 1.4rem;
+      line-height: 1.5;
+    }
+
+    .modal-actions {
+      display: flex;
+      gap: 0.75rem;
+      justify-content: center;
+    }
+
+    .modal-actions button {
+      border-radius: var(--radius);
+      cursor: pointer;
+      font-size: 0.9rem;
+      font-weight: 600;
+      padding: 0.55rem 1.2rem;
+      transition: background 0.2s, transform 0.1s;
+    }
+
+    .modal-actions button:active { transform: scale(0.97); }
+
+    .btn-cancel {
+      background: transparent;
+      border: 1px solid var(--surface2);
+      color: var(--muted);
+    }
+
+    .btn-cancel:hover { border-color: var(--muted); color: var(--text); }
+
+    .btn-confirm {
+      background: var(--danger);
+      border: 1px solid transparent;
+      color: #fff;
+    }
+
+    .btn-confirm:hover { background: var(--danger-h); }
+  </style>
+</head>
+<body>
+
+  <header>
+    <h1>&#x1F516; Bookmark Manager</h1>
+    <p>Save and organise your favourite links</p>
+  </header>
+
+  <div class="card">
+    <h2>Add Bookmark</h2>
+    <form id="form">
+      <input type="url"  id="url"   placeholder="https://example.com" required />
+      <input type="text" id="title" placeholder="Title (optional — auto-filled from URL)" />
+      <button type="submit" class="primary">Add Bookmark</button>
+    </form>
+  </div>
+
+  <div id="search">
+    <input type="text" id="filter" placeholder="Search bookmarks..." />
+  </div>
+
+  <p id="count"></p>
+  <div id="list"></div>
+
+  <div class="toast" id="toast"></div>
+
+  <div class="modal-backdrop" id="modal-backdrop">
+    <div class="modal" role="dialog" aria-modal="true" aria-labelledby="modal-title">
+      <div class="modal-icon">&#x1F5D1;</div>
+      <h3 id="modal-title">Delete bookmark?</h3>
+      <p id="modal-desc">This action cannot be undone.</p>
+      <div class="modal-actions">
+        <button class="btn-cancel" id="modal-cancel">Cancel</button>
+        <button class="btn-confirm" id="modal-confirm">Delete</button>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    const STORAGE_KEY = 'bm_v1';
+
+    function load() {
+      try { return JSON.parse(localStorage.getItem(STORAGE_KEY)) || []; }
+      catch { return []; }
+    }
+
+    function save(bookmarks) {
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(bookmarks));
+    }
+
+    function faviconUrl(url) {
+      try {
+        const origin = new URL(url).origin;
+        return `https://www.google.com/s2/favicons?sz=32&domain_url=${encodeURIComponent(origin)}`;
+      } catch { return ''; }
+    }
+
+    function formatDate(iso) {
+      const d = new Date(iso);
+      return d.toLocaleDateString(undefined, { month: 'short', day: 'numeric', year: 'numeric' });
+    }
+
+    function guessTitle(url) {
+      try {
+        const u = new URL(url);
+        return u.hostname.replace(/^www\./, '');
+      } catch { return url; }
+    }
+
+    function toast(msg) {
+      const el = document.getElementById('toast');
+      el.textContent = msg;
+      el.classList.add('show');
+      setTimeout(() => el.classList.remove('show'), 2000);
+    }
+
+    let filterText = '';
+
+    function render() {
+      const bookmarks = load();
+      const list = document.getElementById('list');
+      const count = document.getElementById('count');
+
+      const filtered = filterText
+        ? bookmarks.filter(b =>
+            b.title.toLowerCase().includes(filterText) ||
+            b.url.toLowerCase().includes(filterText))
+        : bookmarks;
+
+      count.textContent = filtered.length
+        ? `${filtered.length} bookmark${filtered.length !== 1 ? 's' : ''}`
+        : '';
+
+      if (!filtered.length) {
+        list.innerHTML = `<div class="empty">
+          <span>&#x1F50D;</span>
+          ${bookmarks.length ? 'No results for your search.' : 'No bookmarks yet — add one above!'}
+        </div>`;
+        return;
+      }
+
+      list.innerHTML = filtered.slice().reverse().map(b => `
+        <div class="bookmark" data-id="${b.id}">
+          <img class="favicon" src="${faviconUrl(b.url)}" alt="" onerror="this.style.display='none'" />
+          <div class="bookmark-info">
+            <div class="bookmark-title">${escHtml(b.title)}</div>
+            <div class="bookmark-url"><a href="${escAttr(b.url)}" target="_blank" rel="noopener">${escHtml(b.url)}</a></div>
+          </div>
+          <span class="bookmark-meta">${formatDate(b.added)}</span>
+          <button class="delete" title="Delete" data-id="${b.id}">&#x2715;</button>
+        </div>
+      `).join('');
+    }
+
+    function escHtml(s) {
+      return s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+    }
+
+    function escAttr(s) {
+      // only allow http/https to prevent javascript: URIs
+      try {
+        const u = new URL(s);
+        if (u.protocol !== 'http:' && u.protocol !== 'https:') return '#';
+      } catch { return '#'; }
+      return escHtml(s);
+    }
+
+    document.getElementById('form').addEventListener('submit', e => {
+      e.preventDefault();
+      const urlInput   = document.getElementById('url');
+      const titleInput = document.getElementById('title');
+
+      let url = urlInput.value.trim();
+      if (!url) return;
+
+      // Prepend https:// if missing scheme
+      if (!/^https?:\/\//i.test(url)) url = 'https://' + url;
+
+      const title = titleInput.value.trim() || guessTitle(url);
+
+      const bookmarks = load();
+      if (bookmarks.some(b => b.url === url)) {
+        toast('Already saved!');
+        return;
+      }
+
+      bookmarks.push({ id: Date.now().toString(), url, title, added: new Date().toISOString() });
+      save(bookmarks);
+      render();
+      toast('Bookmark added');
+      urlInput.value   = '';
+      titleInput.value = '';
+      urlInput.focus();
+    });
+
+    // Confirm modal
+    let pendingDeleteId = null;
+    const backdrop = document.getElementById('modal-backdrop');
+    const modalDesc = document.getElementById('modal-desc');
+
+    function openModal(id, title) {
+      pendingDeleteId = id;
+      modalDesc.textContent = `"${title}" will be permanently removed.`;
+      backdrop.classList.add('open');
+      document.getElementById('modal-confirm').focus();
+    }
+
+    function closeModal() {
+      backdrop.classList.remove('open');
+      pendingDeleteId = null;
+    }
+
+    document.getElementById('modal-cancel').addEventListener('click', closeModal);
+
+    document.getElementById('modal-confirm').addEventListener('click', () => {
+      if (!pendingDeleteId) return;
+      const bookmarks = load().filter(b => b.id !== pendingDeleteId);
+      save(bookmarks);
+      closeModal();
+      render();
+      toast('Deleted');
+    });
+
+    backdrop.addEventListener('click', e => {
+      if (e.target === backdrop) closeModal();
+    });
+
+    document.addEventListener('keydown', e => {
+      if (e.key === 'Escape' && backdrop.classList.contains('open')) closeModal();
+    });
+
+    document.getElementById('list').addEventListener('click', e => {
+      const btn = e.target.closest('button.delete');
+      if (!btn) return;
+      const id = btn.dataset.id;
+      const bookmark = load().find(b => b.id === id);
+      if (bookmark) openModal(id, bookmark.title);
+    });
+
+    document.getElementById('filter').addEventListener('input', e => {
+      filterText = e.target.value.trim().toLowerCase();
+      render();
+    });
+
+    render();
+  </script>
+</body>
+</html>
